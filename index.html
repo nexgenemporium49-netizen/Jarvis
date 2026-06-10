@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎓 AI Study Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #00d4ff;
+            --secondary: #0099ff;
+            --bg: #020810;
+            --surface: #0f1523;
+            --text: #cce8ff;
+            --text-secondary: rgba(204, 232, 255, 0.6);
+            --success: #00ff88;
+            --error: #ff4444;
+            --border: rgba(0, 212, 255, 0.2);
+            --shadow: 0 8px 32px rgba(0, 212, 255, 0.1);
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg) 0%, #001a33 100%);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: rgba(15, 21, 35, 0.95);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+        }
+
+        .header-content h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-content p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(0, 212, 255, 0.05);
+            color: var(--primary);
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: rgba(0, 212, 255, 0.15);
+            transform: scale(1.05);
+        }
+
+        .subject-bar {
+            display: flex;
+            gap: 8px;
+            padding: 10px 12px;
+            background: rgba(15, 21, 35, 0.8);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .subject-bar::-webkit-scrollbar { height: 4px; }
+        .subject-bar::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.3);
+            border-radius: 2px;
+        }
+
+        .subject-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .subject-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(0, 212, 255, 0.08);
+        }
+
+        .subject-btn.active {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+        }
+
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: rgba(0, 255, 136, 0.08);
+            border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+            box-shadow: 0 0 8px #00ff88;
+            animation: pulse 2s infinite;
+            flex-shrink: 0;
+        }
+
+        .api-info { flex: 1; }
+        .api-info strong { color: var(--primary); }
+
+        .switch-btn {
+            padding: 4px 10px;
+            background: rgba(0, 212, 255, 0.15);
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            color: var(--primary);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .switch-btn:hover { background: rgba(0, 212, 255, 0.25); }
+
+        /* API Type Badge */
+        .api-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .api-badge.gemini {
+            background: rgba(66, 133, 244, 0.2);
+            border: 1px solid rgba(66, 133, 244, 0.5);
+            color: #4285f4;
+        }
+
+        .api-badge.claude {
+            background: rgba(0, 212, 255, 0.15);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .messages-area::-webkit-scrollbar { width: 4px; }
+        .messages-area::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .empty-chat {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .welcome-box {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            max-width: 400px;
+        }
+
+        .welcome-box h2 { font-size: 32px; margin-bottom: 12px; }
+        .welcome-box p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message.user { justify-content: flex-end; }
+
+        .message-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .message.assistant .message-bubble {
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid var(--border);
+            border-radius: 12px 12px 2px 12px;
+            color: var(--text);
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 153, 255, 0.2));
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            border-radius: 12px 2px 12px 12px;
+            color: var(--primary);
+        }
+
+        .message-time {
+            display: block;
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            opacity: 0.7;
+        }
+
+        .message-meta {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px solid rgba(0, 212, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+            padding: 12px 16px;
+            background: rgba(15, 21, 35, 0.95);
+            border-top: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        .file-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(0, 212, 255, 0.05);
+            color: var(--primary);
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .file-btn:hover { background: rgba(0, 212, 255, 0.15); }
+
+        .message-input {
+            flex: 1;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            max-height: 100px;
+            outline: none;
+            caret-color: var(--primary);
+        }
+
+        .message-input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .message-input::placeholder { color: var(--text-secondary); }
+
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1.5px solid var(--primary);
+            background: rgba(0, 212, 255, 0.12);
+            color: var(--primary);
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: rgba(0, 212, 255, 0.25);
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* MODALS */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 8, 16, 0.9);
+            display: none;
+            align-items: flex-end;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.open { display: flex; }
+
+        .modal-content {
+            width: 100%;
+            max-height: 90vh;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            border-radius: 20px 20px 0 0;
+            padding: 24px;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-content h2 { font-size: 20px; margin-bottom: 20px; color: var(--primary); }
+        .modal-content h3 { font-size: 14px; margin: 20px 0 12px; color: var(--text); }
+
+        .section {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .api-keys-list { margin-bottom: 16px; }
+
+        .api-key-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .api-key-item div strong { display: block; color: var(--primary); }
+        .api-key-item small {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .remove-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            background: rgba(255, 68, 68, 0.05);
+            color: #ff8888;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .remove-btn:hover { background: rgba(255, 68, 68, 0.15); }
+
+        .form-group { margin-bottom: 16px; }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-field, .textarea-field, .select-field {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 13px;
+            font-family: inherit;
+            margin-bottom: 10px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .select-field option {
+            background: var(--surface);
+            color: var(--text);
+        }
+
+        .input-field:focus, .textarea-field:focus, .select-field:focus {
+            border-color: var(--primary);
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .input-field::placeholder, .textarea-field::placeholder { color: var(--text-secondary); }
+        .textarea-field { resize: vertical; min-height: 100px; }
+
+        .btn-primary, .btn-danger, .btn-close {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+
+        .btn-primary {
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-primary:hover { background: rgba(0, 212, 255, 0.35); }
+
+        .btn-danger {
+            background: rgba(255, 68, 68, 0.15);
+            border: 1px solid rgba(255, 68, 68, 0.4);
+            color: #ff8888;
+        }
+
+        .btn-danger:hover { background: rgba(255, 68, 68, 0.25); }
+
+        .btn-close {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text);
+            margin-top: 20px;
+        }
+
+        .btn-close:hover { background: rgba(255, 255, 255, 0.15); }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            padding: 16px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-box h4 {
+            font-size: 12px;
+            color: var(--primary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .stat-box p { font-size: 13px; color: var(--text-secondary); }
+
+        .warning {
+            padding: 10px 16px;
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            color: #ff8888;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 8px;
+            border-radius: 8px;
+        }
+
+        .info-box {
+            padding: 10px 16px;
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-top: 8px;
+            border-radius: 8px;
+            line-height: 1.5;
+        }
+
+        .info-box strong { color: var(--primary); }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 20px;
+            font-size: 13px;
+        }
+
+        /* ANIMATIONS */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 10px 14px;
+            background: rgba(0, 212, 255, 0.08);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: fit-content;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: bounce 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-8px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="header-content">
+                <h1>🎓 AI Study Assistant</h1>
+                <p id="headerSubtitle">General Learning</p>
+            </div>
+            <div class="header-buttons">
+                <button class="icon-btn" onclick="openProfile()" title="Profile">👤</button>
+                <button class="icon-btn" onclick="openSettings()" title="Settings">⚙️</button>
+            </div>
+        </header>
+
+        <div class="subject-bar" id="subjectBar"></div>
+        <div class="api-status" id="apiStatus"></div>
+
+        <div class="chat-container">
+            <div class="messages-area" id="messagesArea"></div>
+            <div class="input-area">
+                <button class="file-btn" onclick="document.getElementById('fileInput').click()" title="Upload file">📎</button>
+                <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.txt" style="display:none" onchange="handleFileUpload(event)">
+                <textarea id="messageInput" class="message-input" placeholder="Apna question pocho..." rows="1"
+                    onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">⚡</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content">
+            <h2>⚙️ Settings</h2>
+
+            <div class="section">
+                <h3>🔑 API Keys Management</h3>
+                <div class="api-keys-list" id="apiKeysList"></div>
+
+                <div class="form-group">
+                    <label>Key Name (e.g., "My Gemini Key")</label>
+                    <input type="text" id="keyNameInput" class="input-field" placeholder="Personal Key">
+                </div>
+                <div class="form-group">
+                    <label>API Type</label>
+                    <select id="keyTypeSelect" class="select-field" onchange="updateKeyPlaceholder()">
+                        <option value="gemini">🟦 Google Gemini (Free!)</option>
+                        <option value="claude">🤖 Anthropic Claude</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label id="keyInputLabel">API Key</label>
+                    <input type="password" id="keyValueInput" class="input-field" placeholder="AIza...">
+                </div>
+
+                <div class="info-box" id="apiHelpBox">
+                    🆓 <strong>Gemini Free Key kaise milegi:</strong><br>
+                    1. <strong>aistudio.google.com</strong> pe jao<br>
+                    2. Google account se login karo<br>
+                    3. "Get API Key" click karo — bilkul free! 🎉
+                </div>
+
+                <button class="btn-primary" onclick="addApiKey()">➕ Add API Key</button>
+            </div>
+
+            <div class="section">
+                <h3>📊 Storage Info</h3>
+                <p>Messages: <strong id="messageCount">0</strong></p>
+                <p>API Keys: <strong id="apiKeyCount">0</strong></p>
+                <button class="btn-danger" onclick="clearAllData()">🗑️ Clear All Messages</button>
+            </div>
+
+            <button class="btn-close" onclick="closeSettings()">Close</button>
+        </div>
+    </div>
+
+    <!-- PROFILE MODAL -->
+    <div class="modal-overlay" id="profileModal">
+        <div class="modal-content">
+            <h2>👤 Learning Profile</h2>
+
+            <div class="form-group">
+                <label>Your Name</label>
+                <input type="text" id="nameInput" class="input-field" placeholder="Your name">
+            </div>
+
+            <div class="stats">
+                <div class="stat-box">
+                    <h4>📚 Learning History</h4>
+                    <p id="historyCount">0 concepts</p>
+                </div>
+                <div class="stat-box">
+                    <h4>📈 Recent Subjects</h4>
+                    <p id="recentSubjects">None yet</p>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>📝 Session Notes</label>
+                <textarea id="notesInput" class="textarea-field" placeholder="Write your study notes..."></textarea>
+            </div>
+
+            <button class="btn-primary" onclick="saveProfile()">💾 Save Profile</button>
+            <button class="btn-close" onclick="closeProfile()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════
+        // SUBJECTS
+        // ═══════════════════════════════════════════════════════════════════
+
+        const SUBJECTS = {
+            physics: {
+                emoji: '⚛️', name: 'Physics',
+                description: 'Mechanics, E&M, Optics, Modern Physics, Thermodynamics',
+                systemPrompt: `Tu ek expert physics tutor hai JEE/NEET level ke liye. Hinglish mein explain kar (Hindi + English mix). Complex topics ko simple steps mein break kar. Formulas aur derivations clearly likho. Real-world examples de. Max 150 words mein answer de. Bullet points use kar clarity ke liye. Hamesha end mein add kar: "📌 JEE Focus: [exam ke liye kaunsi important baat]"`
+            },
+            chemistry: {
+                emoji: '🧪', name: 'Chemistry',
+                description: 'Organic, Inorganic, Physical, Analytical Chemistry',
+                systemPrompt: `Tu ek expert chemistry tutor hai JEE/NEET level ke liye. Hinglish mein explain kar. Reaction mechanisms step-by-step dikhao. Lewis structures aur electron movements explain kar. Memorization tricks aur mnemonics de. Exam ke liye important points batao. Max 150 words mein answer de.`
+            },
+            maths: {
+                emoji: '∑', name: 'Mathematics',
+                description: 'Calculus, Algebra, Geometry, Trigonometry',
+                systemPrompt: `Tu ek expert maths tutor hai JEE/NEET level ke liye. Hinglish mein explain kar. Solution ko step-by-step dikhao. "Why" behind each step explain kar. Multiple approaches de agar possible ho. Quick tricks/shortcuts bata. Max 150 words. Format: Problem → Solution → Key insight`
+            },
+            computer: {
+                emoji: '💻', name: 'Computer Science',
+                description: 'DSA, Web Dev, Databases, AI/ML',
+                systemPrompt: `Tu ek expert computer science mentor hai. Hinglish mein explain kar. Algorithms ko clearly break kar. Time aur space complexity explain kar. Python/JavaScript mein code examples de. Real-world applications batao. Max 150 words.`
+            },
+            sanskrit: {
+                emoji: '🕉️', name: 'Sanskrit',
+                description: 'Grammar, Literature, Vedas, Philosophy',
+                systemPrompt: `Tu ek expert Sanskrit scholar hai. Hinglish mein explain kar. Grammar rules ko examples se samjha. Word formation aur etymology batao. Translation with context de. Cultural significance explain kar. Max 150 words.`
+            },
+            psychology: {
+                emoji: '🧠', name: 'Psychology',
+                description: 'Cognitive, Social, Developmental, Clinical Psychology',
+                systemPrompt: `Tu ek expert psychology mentor hai. Hinglish mein explain kar. Psychological concepts ko real examples se samjha. Famous psychologists aur theories mention kar. Practical applications de. Max 150 words.`
+            },
+            general: {
+                emoji: '💬', name: 'General Learning',
+                description: 'Cross-subject help, research, problem-solving',
+                systemPrompt: `Tu ek helpful, knowledgeable AI learning assistant hai. Hinglish mein respond kar (Hindi + English mix). Clear aur concise explain kar. Relevant examples de. Max 150 words. Friendly aur motivating raho!`
+            }
+        };
+
+        // ═══════════════════════════════════════════════════════════════════
+        // STATE
+        // ═══════════════════════════════════════════════════════════════════
+
+        let apiKeys = [];
+        let currentApiKeyIndex = 0;
+        let currentSubject = 'general';
+        let messages = [];
+        let userProfile = { name: 'Student', notes: '', learningHistory: [] };
+        let isLoading = false;
+
+        // ═══════════════════════════════════════════════════════════════════
+        // STORAGE
+        // ═══════════════════════════════════════════════════════════════════
+
+        function loadFromStorage() {
+            try {
+                apiKeys = JSON.parse(localStorage.getItem('apiKeys')) || [];
+                currentSubject = localStorage.getItem('currentSubject') || 'general';
+                messages = JSON.parse(localStorage.getItem('messages')) || [];
+                userProfile = JSON.parse(localStorage.getItem('userProfile')) || { name: 'Student', notes: '', learningHistory: [] };
+                render();
+            } catch (e) {
+                console.error('Storage load error:', e);
+            }
+        }
+
+        function saveToStorage() {
+            try {
+                localStorage.setItem('apiKeys', JSON.stringify(apiKeys));
+                localStorage.setItem('currentSubject', currentSubject);
+                localStorage.setItem('messages', JSON.stringify(messages));
+                localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            } catch (e) {
+                alert('Storage limit reached! Clear some history.');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // API KEY MANAGEMENT
+        // ═══════════════════════════════════════════════════════════════════
+
+        function updateKeyPlaceholder() {
+            const type = document.getElementById('keyTypeSelect').value;
+            const label = document.getElementById('keyInputLabel');
+            const input = document.getElementById('keyValueInput');
+            const helpBox = document.getElementById('apiHelpBox');
+
+            if (type === 'gemini') {
+                label.textContent = 'Gemini API Key (AIza...)';
+                input.placeholder = 'AIzaSy...';
+                helpBox.innerHTML = `🆓 <strong>Gemini Free Key kaise milegi:</strong><br>
+                    1. <strong>aistudio.google.com</strong> pe jao<br>
+                    2. Google account se login karo<br>
+                    3. "Get API Key" click karo — bilkul free! 🎉<br>
+                    <span style="color:var(--success)">✅ AIza... aur AQ.... dono formats supported hain!</span>`;
+            } else {
+                label.textContent = 'Claude API Key (sk-ant-...)';
+                input.placeholder = 'sk-ant-api03-...';
+                helpBox.innerHTML = `💳 <strong>Claude Key kaise milegi:</strong><br>
+                    1. <strong>console.anthropic.com</strong> pe jao<br>
+                    2. Account banao (new users ko $5 free credit milta hai)<br>
+                    3. API Keys section mein key banao`;
+            }
+        }
+
+        function addApiKey() {
+            const name = document.getElementById('keyNameInput').value.trim();
+            const value = document.getElementById('keyValueInput').value.trim();
+            const type = document.getElementById('keyTypeSelect').value;
+
+            if (!name || !value) {
+                alert('❌ Name aur Key dono required hain!');
+                return;
+            }
+
+            // Validate based on type
+            if (type === 'gemini' && !value.startsWith('AIza') && !value.startsWith('AQ.')) {
+                alert('❌ Invalid Gemini key! "AIza..." ya "AQ." se start hona chahiye.\naistudio.google.com se key lo.');
+                return;
+            }
+
+            if (type === 'claude' && !value.startsWith('sk-ant-')) {
+                alert('❌ Invalid Claude key! "sk-ant-" se start hona chahiye.');
+                return;
+            }
+
+            const newKey = {
+                id: Date.now(),
+                name,
+                key: value,
+                type: type, // 'gemini' or 'claude'
+                createdAt: new Date().toLocaleDateString('en-IN')
+            };
+
+            apiKeys.push(newKey);
+            saveToStorage();
+
+            document.getElementById('keyNameInput').value = '';
+            document.getElementById('keyValueInput').value = '';
+
+            alert(`✅ API Key "${name}" (${type === 'gemini' ? 'Gemini' : 'Claude'}) added successfully!`);
+            renderSettings();
+            updateApiStatus();
+        }
+
+        function removeApiKey(id) {
+            apiKeys = apiKeys.filter(k => k.id !== id);
+            if (currentApiKeyIndex >= apiKeys.length && apiKeys.length > 0) {
+                currentApiKeyIndex = 0;
+            }
+            saveToStorage();
+            renderSettings();
+            updateApiStatus();
+        }
+
+        function switchApiKey() {
+            if (apiKeys.length === 0) return;
+            currentApiKeyIndex = (currentApiKeyIndex + 1) % apiKeys.length;
+            saveToStorage();
+            updateApiStatus();
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // API CALLS — GEMINI + CLAUDE
+        // ═══════════════════════════════════════════════════════════════════
+
+        async function callGeminiAPI(apiKey, systemPrompt, userMessage, conversationHistory) {
+            const model = 'gemini-1.5-flash';
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+            // Build conversation for Gemini
+            const contents = [];
+
+            // Add history (last 10 messages)
+            const recentHistory = conversationHistory.slice(-10);
+            for (const msg of recentHistory) {
+                if (msg.role === 'user') {
+                    contents.push({ role: 'user', parts: [{ text: msg.content }] });
+                } else if (msg.role === 'assistant') {
+                    contents.push({ role: 'model', parts: [{ text: msg.content }] });
+                }
+            }
+
+            // Add current message
+            contents.push({ role: 'user', parts: [{ text: userMessage }] });
+
+            const body = {
+                system_instruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                contents: contents,
+                generationConfig: {
+                    maxOutputTokens: 1024,
+                    temperature: 0.7
+                }
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error?.message || `Gemini Error ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.candidates?.[0]?.content?.parts?.[0]?.text || '❌ No response from Gemini';
+        }
+
+        async function callClaudeAPI(apiKey, systemPrompt, conversationHistory) {
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify({
+                    model: 'claude-sonnet-4-20250514',
+                    max_tokens: 1024,
+                    system: systemPrompt,
+                    messages: conversationHistory
+                        .filter(m => m.role !== 'system')
+                        .map(m => ({ role: m.role, content: m.content }))
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Claude Error ${response.status}: ${errorText.slice(0, 100)}`);
+            }
+
+            const data = await response.json();
+            return data.content[0]?.text || '❌ No response from Claude';
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SEND MESSAGE
+        // ═══════════════════════════════════════════════════════════════════
+
+        async function sendMessage() {
+            const inputEl = document.getElementById('messageInput');
+            const text = inputEl.value.trim();
+
+            if (!text || isLoading) return;
+
+            if (apiKeys.length === 0) {
+                alert('❌ Pehle Settings mein API key add karo!\n\nGemini free hai: aistudio.google.com');
+                return;
+            }
+
+            addMessage('user', text);
+            inputEl.value = '';
+            inputEl.style.height = 'auto';
+
+            isLoading = true;
+            updateSendButton();
+            renderMessages(); // show typing indicator
+
+            try {
+                const currentKey = apiKeys[currentApiKeyIndex];
+                const systemPrompt = SUBJECTS[currentSubject].systemPrompt;
+                let assistantMsg = '';
+
+                if (currentKey.type === 'gemini') {
+                    // Call Gemini API
+                    assistantMsg = await callGeminiAPI(
+                        currentKey.key,
+                        systemPrompt,
+                        text,
+                        messages.slice(0, -1) // history before current user msg
+                    );
+                } else {
+                    // Call Claude API
+                    assistantMsg = await callClaudeAPI(
+                        currentKey.key,
+                        systemPrompt,
+                        messages
+                    );
+                }
+
+                addMessage('assistant', assistantMsg);
+                updateLearningHistory(text, assistantMsg);
+
+            } catch (error) {
+                addMessage('assistant', `⚠️ Error: ${error.message}\n\nTip: Settings mein jaake API key check karo ya switch karo!`);
+            }
+
+            isLoading = false;
+            updateSendButton();
+        }
+
+        function addMessage(role, content) {
+            const currentKey = apiKeys[currentApiKeyIndex];
+            const message = {
+                id: Date.now(),
+                role,
+                content,
+                timestamp: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+                subject: currentSubject,
+                apiKey: currentKey?.name || 'Unknown',
+                apiType: currentKey?.type || 'claude'
+            };
+
+            messages.push(message);
+            saveToStorage();
+            renderMessages();
+        }
+
+        function updateLearningHistory(question, answer) {
+            userProfile.learningHistory = userProfile.learningHistory || [];
+            userProfile.learningHistory.push({
+                date: new Date().toLocaleDateString('en-IN'),
+                subject: currentSubject,
+                question: question.slice(0, 50),
+                answered: true
+            });
+            if (userProfile.learningHistory.length > 100) {
+                userProfile.learningHistory = userProfile.learningHistory.slice(-100);
+            }
+            saveToStorage();
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // FILE HANDLING
+        // ═══════════════════════════════════════════════════════════════════
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            isLoading = true;
+            updateSendButton();
+
+            try {
+                if (file.type === 'text/plain') {
+                    const content = await file.text();
+                    addMessage('assistant', `📝 Text file loaded! ${content.length} characters found.\n\nKya analysis chahiye?`);
+                } else if (file.type.startsWith('image/')) {
+                    addMessage('assistant', `🖼️ Image loaded!\n\nDiagram explain karu, text read karu, ya kuch aur?`);
+                } else if (file.type === 'application/pdf') {
+                    addMessage('assistant', `📄 PDF uploaded!\n\nNote: PDF text extraction ke liye relevant text copy-paste kar sakte ho!`);
+                }
+            } catch (error) {
+                addMessage('assistant', `❌ File error: ${error.message}`);
+            }
+
+            isLoading = false;
+            updateSendButton();
+            event.target.value = '';
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // PROFILE
+        // ═══════════════════════════════════════════════════════════════════
+
+        function openProfile() {
+            document.getElementById('nameInput').value = userProfile.name;
+            document.getElementById('notesInput').value = userProfile.notes || '';
+            const uniqueSubjects = [...new Set(userProfile.learningHistory?.map(h => h.subject) || [])].slice(0, 3);
+            document.getElementById('recentSubjects').textContent = uniqueSubjects.length > 0
+                ? uniqueSubjects.map(s => SUBJECTS[s]?.emoji + ' ' + SUBJECTS[s]?.name).join(', ')
+                : 'None yet';
+            document.getElementById('historyCount').textContent = (userProfile.learningHistory?.length || 0) + ' concepts';
+            document.getElementById('profileModal').classList.add('open');
+        }
+
+        function closeProfile() {
+            document.getElementById('profileModal').classList.remove('open');
+        }
+
+        function saveProfile() {
+            userProfile.name = document.getElementById('nameInput').value || 'Student';
+            userProfile.notes = document.getElementById('notesInput').value;
+            saveToStorage();
+            alert('✅ Profile saved!');
+            closeProfile();
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SETTINGS
+        // ═══════════════════════════════════════════════════════════════════
+
+        function openSettings() {
+            renderSettings();
+            document.getElementById('settingsModal').classList.add('open');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('open');
+        }
+
+        function renderSettings() {
+            const list = document.getElementById('apiKeysList');
+
+            if (apiKeys.length === 0) {
+                list.innerHTML = '<p class="empty-state">No API keys yet. Add one above!</p>';
+            } else {
+                list.innerHTML = apiKeys.map((k, idx) => `
+                    <div class="api-key-item">
+                        <div>
+                            <strong>${k.name}
+                                <span class="api-badge ${k.type === 'gemini' ? 'gemini' : 'claude'}">
+                                    ${k.type === 'gemini' ? '🟦 Gemini' : '🤖 Claude'}
+                                </span>
+                            </strong>
+                            <small>${k.key.slice(0, 8)}...${k.key.slice(-4)} · Added ${k.createdAt}</small>
+                        </div>
+                        <button class="remove-btn" onclick="removeApiKey(${k.id})">✕</button>
+                    </div>
+                `).join('');
+            }
+
+            document.getElementById('messageCount').textContent = messages.length;
+            document.getElementById('apiKeyCount').textContent = apiKeys.length;
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ Clear all messages? This cannot be undone!')) {
+                messages = [];
+                saveToStorage();
+                renderMessages();
+                alert('✅ All messages cleared!');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // RENDERING
+        // ═══════════════════════════════════════════════════════════════════
+
+        function renderSubjects() {
+            const bar = document.getElementById('subjectBar');
+            bar.innerHTML = Object.entries(SUBJECTS).map(([key, subject]) => `
+                <button class="subject-btn ${currentSubject === key ? 'active' : ''}" onclick="selectSubject('${key}')">
+                    <span>${subject.emoji}</span>
+                    <span>${subject.name}</span>
+                </button>
+            `).join('');
+        }
+
+        function selectSubject(subject) {
+            currentSubject = subject;
+            saveToStorage();
+            render();
+        }
+
+        function updateApiStatus() {
+            const status = document.getElementById('apiStatus');
+
+            if (apiKeys.length === 0) {
+                status.style.background = 'rgba(255, 68, 68, 0.08)';
+                status.style.borderBottomColor = 'rgba(255, 68, 68, 0.2)';
+                status.innerHTML = `
+                    <div style="width:100%;text-align:center;color:var(--error);">
+                        ❌ No API keys! Settings mein add karo.
+                        <span style="color:var(--text-secondary);font-size:11px;"> (Gemini free hai!)</span>
+                    </div>`;
+            } else {
+                const currentKey = apiKeys[currentApiKeyIndex];
+                const isGemini = currentKey?.type === 'gemini';
+                status.style.background = 'rgba(0, 255, 136, 0.08)';
+                status.style.borderBottomColor = 'rgba(0, 255, 136, 0.2)';
+                status.innerHTML = `
+                    <div class="status-dot"></div>
+                    <div class="api-info">
+                        Using: <strong>${currentKey?.name || 'Unknown'}</strong>
+                        <span class="api-badge ${isGemini ? 'gemini' : 'claude'}" style="margin-left:6px;">
+                            ${isGemini ? '🟦 Gemini' : '🤖 Claude'}
+                        </span>
+                    </div>
+                    ${apiKeys.length > 1 ? `<button class="switch-btn" onclick="switchApiKey()">🔄 Switch</button>` : ''}
+                `;
+            }
+        }
+
+        function renderMessages() {
+            const area = document.getElementById('messagesArea');
+
+            if (messages.length === 0) {
+                area.innerHTML = `
+                    <div class="empty-chat">
+                        <div class="welcome-box">
+                            <h2>${SUBJECTS[currentSubject].emoji}</h2>
+                            <h3 style="color:var(--primary);margin-bottom:8px;">${SUBJECTS[currentSubject].name}</h3>
+                            <p>${SUBJECTS[currentSubject].description}</p>
+                            <p style="margin-top:16px;color:var(--primary);font-size:12px;">
+                                Question pocho ya file upload karo! 🚀
+                            </p>
+                        </div>
+                    </div>`;
+            } else {
+                area.innerHTML = messages.map(msg => {
+                    const isGemini = msg.apiType === 'gemini';
+                    return `
+                    <div class="message ${msg.role}">
+                        <div class="message-bubble">
+                            ${msg.content.replace(/\n/g, '<br>')}
+                            <div class="message-meta">
+                                <span class="message-time">${msg.timestamp}</span>
+                                🔑 ${msg.apiKey}
+                                ${msg.role === 'assistant' ? `<span class="api-badge ${isGemini ? 'gemini' : 'claude'}">${isGemini ? '🟦 Gemini' : '🤖 Claude'}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                if (isLoading) {
+                    area.innerHTML += `
+                        <div class="message assistant">
+                            <div class="typing-indicator">
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                                <div class="typing-dot"></div>
+                            </div>
+                        </div>`;
+                }
+
+                area.scrollTop = area.scrollHeight;
+            }
+        }
+
+        function updateSendButton() {
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = isLoading || !document.getElementById('messageInput').value.trim() || apiKeys.length === 0;
+            btn.textContent = isLoading ? '⏳' : '⚡';
+        }
+
+        function render() {
+            renderSubjects();
+            renderMessages();
+            document.getElementById('headerSubtitle').textContent = SUBJECTS[currentSubject]?.name || 'General';
+            updateApiStatus();
+            updateSendButton();
+        }
+
+        document.getElementById('messageInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+            updateSendButton();
+        });
+
+        // INIT
+        loadFromStorage();
+    </script>
+</body>
+</html>
